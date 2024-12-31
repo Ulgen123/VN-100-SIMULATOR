@@ -1,0 +1,3 @@
+C:/Users/astekstajyer/Desktop/new/build/CMakeFiles/myProject.dir
+C:/Users/astekstajyer/Desktop/new/build/CMakeFiles/edit_cache.dir
+C:/Users/astekstajyer/Desktop/new/build/CMakeFiles/rebuild_cache.dir

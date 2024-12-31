@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "parser.h": "c",
+        "windows.h": "c",
+        "write.h": "c",
+        "imu_info.h": "c",
+        "cksum.h": "c",
+        "serial_port.h": "c",
+        "string.h": "c",
+        "read.h": "c"
+    }
+}
