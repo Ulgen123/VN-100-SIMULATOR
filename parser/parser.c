@@ -134,6 +134,7 @@ void parser(const char *msg)
                 step = -3; // Hata durumunda çık
             }
             break;
+            
 
         case 4:
         { // Mesajın ',' ile ayrıldığını kontrol et ve ayrılmış parçalara böl
