@@ -1,3 +1,0 @@
-C:/Users/astekstajyer/Desktop/new/.vscode/build/CMakeFiles/myProject.dir
-C:/Users/astekstajyer/Desktop/new/.vscode/build/CMakeFiles/edit_cache.dir
-C:/Users/astekstajyer/Desktop/new/.vscode/build/CMakeFiles/rebuild_cache.dir

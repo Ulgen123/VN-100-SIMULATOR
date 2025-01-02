@@ -1,8 +1,0 @@
-# ninja log v5
-26	2370	7564055164939827	CMakeFiles/myProject.dir/functions/cksum.c.obj	f636b2e07285ce28
-51	2484	7564055165781718	CMakeFiles/myProject.dir/functions/parser.c.obj	f4aabc29d3844452
-4	4060	7564055184642958	CMakeFiles/myProject.dir/main.c.obj	e97edbee035c5b03
-4188	5970	7564055199574182	myProject.exe	72b19ddc1f19c61c
-76	4026	7564055184462937	CMakeFiles/myProject.dir/functions/read.c.obj	4ba9e8caac9d189e
-105	4121	7564055185406720	CMakeFiles/myProject.dir/functions/serial_port.c.obj	2673332d2d7948f6
-141	4187	7564055186232713	CMakeFiles/myProject.dir/functions/write.c.obj	df58c75a8ad49620
