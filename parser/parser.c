@@ -9,56 +9,59 @@
 #define hardware_revision "7"
 #define serial_number "0100061897"
 
+int commandNumber;
+int step;
 extern int new_frequency;
 extern HANDLE hSerial;
 
 /**
- * @brief Parses and validates a received message according to specific rules.
+ * @brief This function is a parser for processing specific command messages in the form of "$<Command>*<Checksum>".
  *
- * The `parser` function analyzes a message, performs several validation steps,
- * extracts relevant data, and triggers specific actions based on the content of the message.
+ * The parser is designed to handle messages with specific formats like:
+ * - Start with a '$' symbol
+ * - Contain certain keywords like "VNWRG" or "VNRRG"
+ * - Separate components using commas (e.g., "$VNRRG,01,VN-100T-CR*32")
+ * - Ensure the message ends with a checksum (after a '*' symbol).
  *
- * ### Functionality:
- * - Checks for the presence of mandatory symbols (`$`, `*`) and ensures the message starts with `$`.
- * - Verifies the message type (`VNWRG` or `VNRRG`) and handles specific commands.
- * - Extracts and validates the command number and payload based on the message content.
- * - Performs checksum verification to ensure message integrity.
- * - Updates the system frequency if a valid payload is received.
- * - Handles errors at each step and logs descriptive messages.
+ * The parser goes through different steps to:
+ * 1. Validate the presence of '$' and '*'
+ * 2. Ensure the message begins with '$'
+ * 3. Check the message contains specific commands like "VNWRG" or "VNRRG"
+ * 4. Split the message by commas and process the payload
+ * 5. Verify the device ID and payload values
+ * 6. Perform checksum validation to ensure data integrity.
  *
- * ### Steps:
- * 1. Check for `$` and `*` symbols.
- * 2. Ensure the message starts with `$`.
- * 3. Handle `VNRRG` or `VNWRG` messages with specific logic for commands `01`, `02`, and `03`.
- * 4. Parse the payload if the device ID matches `07`.
- * 5. Validate and update the system frequency based on the payload.
- * 6. Calculate and compare the checksum to ensure data integrity.
+ * The checksum is calculated for all characters in the message except for the '$' symbol.
+ * The parser supports different device responses based on command number (e.g., "VNRRG,01,VN-100T-CR").
+ * It sends back a response with the correct command, device information, and checksum if everything is valid.
  *
- * ### Parameters:
- * @param msg  The message string to be parsed. Assumes the string is null-terminated.
+ * @param msg The input message string to be parsed.
  *
- * ### Notes:
- * - The function uses a state machine approach to manage the parsing process.
- * - Error states are handled gracefully, with appropriate messages logged.
- * - Commands `01`, `02`, and `03` trigger responses using the `write` function.
+ * Steps are implemented using a simple state machine with the `step` variable controlling the flow.
+ * Error handling is implemented at each stage, and the function exits with an appropriate message
+ * when a condition is not met.
  *
- * ### Error Handling:
- * - Logs errors for missing symbols, invalid commands, or checksum mismatches.
- * - Stops further processing when an error occurs.
+ * External functions used:
+ * - `calc_cksum()`: Calculates checksum of the provided string (excluding '$')
+ * - `write()`: Sends the response message (the actual write method depends on your platform, e.g., serial communication)
  *
- * ### Expected Message Format:
- * - Format: `$<Command>,<DeviceID>,<Payload>*<Checksum>`
+ * Example of message format:
+ * - Command: "$VNRRG,01,VN-100T-CR*32"
+ * - Checksum: The checksum after '*' should match the calculated one.
  *
- * ### Dependencies:
- * - `calc_cksum`: Calculates the checksum of a message.
- * - `write`: Sends data through a communication channel.
+ * The parser supports:
+ * - Validating message structure
+ * - Handling specific commands (e.g., "VNRRG")
+ * - Processing frequency values from the payload (e.g., "1", "2", "5", etc.)
+ * - Handling device ID validation ("07")
  */
 void parser(const char *msg)
 {
     char buffer[BUFFER_SIZE];
-    int step = 1; // Başlangıç adımı
-
+    step = 1; // Başlangıç adımı
+    char *variable = NULL;
     char *payload = NULL;
+    int checksum;
     while (step > 0)
     {
         switch (step)
@@ -95,34 +98,30 @@ void parser(const char *msg)
 
             else if (strstr(msg, "VNRRG") != NULL)
             {
-                int commandNumber;
                 sscanf(msg + 7, "%2d", &commandNumber); // VNRRG'den sonra gelen 2 basamaklı sayıyı al
 
                 if (commandNumber == 1) // Gelen sayıya göre işlem yap
                 {
                     snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s", commandNumber, device_name);
-                    int checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
-                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, device_name, checksum);
-                    write(hSerial, buffer);
+                    checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+                    variable = device_name;
                     //$VNRRG,01,VN-100T-CR*32
                     step = 4; // Bir sonraki adıma geç
                 }
                 else if (commandNumber == 2)
                 {
                     snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s", commandNumber, hardware_revision);
-                    int checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
-                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, hardware_revision, checksum);
-                    write(hSerial, buffer);
-                    // $VNRRG,02,7*6A
+                    checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+                    //  $VNRRG,02,7*6A
+                    variable = hardware_revision;
                     step = 4; // Bir sonraki adıma geç
                 }
                 else if (commandNumber == 3)
                 {
                     snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s", commandNumber, serial_number);
-                    int checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
-                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, serial_number, checksum);
-                    write(hSerial, buffer);
-                    // $VNRRG,03,0100061897*5C
+                    checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+                    variable = serial_number;
+                    //  $VNRRG,03,0100061897*5C
                     step = 4; // Bir sonraki adıma geç
                 }
                 else
@@ -197,7 +196,7 @@ void parser(const char *msg)
             }
             else if (strstr(msg, "VNRRG") != NULL)
             {
-                step = 6;   // Bir sonraki adıma geç
+                step = 6; // Bir sonraki adıma geç
             }
             else
             {
@@ -228,9 +227,18 @@ void parser(const char *msg)
 
             if (calculated_cksum == received_cksum)
             {
-                step = 0;                     // Tüm adımlar tamamlandı
-                printf("Message: %s\n", msg); // Mesajın tamamını yazdır
-                new_frequency = atoi(payload);
+                if (strstr(msg, "VNRRG") != NULL)
+                {
+                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, variable, checksum);
+                    write(hSerial, buffer);
+                    step = 0;
+                }
+                else
+                {
+                    step = 0;                     // Tüm adımlar tamamlandı
+                    printf("Message: %s\n", msg); // Mesajın tamamını yazdır
+                    new_frequency = atoi(payload);
+                }
             }
             else
             {

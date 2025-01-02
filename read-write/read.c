@@ -8,6 +8,7 @@
 int frequency = 1.0;
 int new_frequency;
 
+extern int step;
 /**
  * @brief Reads data from a serial port and processes it.
  *
@@ -46,7 +47,7 @@ DWORD read(HANDLE hSerial, char *readbuffer, size_t size)
             readbuffer[bytesRead] = '\0'; // Null-terminator ekle
             printf("Received data: %s\n", readbuffer);
             parser(readbuffer);
-            if (strncmp(readbuffer, "$VNRRG", 6) != 0)
+            if (strncmp(readbuffer, "$VNRRG", 6) != 0 && step >= 0 )
             {
                 write(hSerial, readbuffer);
             }
