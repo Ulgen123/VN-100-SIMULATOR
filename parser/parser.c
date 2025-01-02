@@ -105,7 +105,7 @@ void parser(const char *msg)
                     snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, device_name, checksum);
                     write(hSerial, buffer);
                     //$VNRRG,01,VN-100T-CR*32
-                    step = 4; // Tüm adımlar tamamlandı
+                    step = 4; // Bir sonraki adıma geç
                 }
                 else if (commandNumber == 2)
                 {
@@ -114,7 +114,7 @@ void parser(const char *msg)
                     snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, hardware_revision, checksum);
                     write(hSerial, buffer);
                     // $VNRRG,02,7*6A
-                    step = 4; // Tüm adımlar tamamlandı
+                    step = 4; // Bir sonraki adıma geç
                 }
                 else if (commandNumber == 3)
                 {
@@ -123,7 +123,7 @@ void parser(const char *msg)
                     snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, serial_number, checksum);
                     write(hSerial, buffer);
                     // $VNRRG,03,0100061897*5C
-                    step = 4;
+                    step = 4; // Bir sonraki adıma geç
                 }
                 else
                 {
