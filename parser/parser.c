@@ -92,6 +92,7 @@ void parser(const char *msg)
             {
                 step = 4; // Bir sonraki adıma geç
             }
+
             else if (strstr(msg, "VNRRG") != NULL)
             {
                 int commandNumber;
@@ -157,7 +158,6 @@ void parser(const char *msg)
             }
             break;
         }
-
         case 5:
         {                                          // Cihaz ID'sinin "07" olup olmadığını kontrol et
             char *buffer = strdup(msg);            // Mesajın bir kopyasını al
@@ -197,7 +197,7 @@ void parser(const char *msg)
             }
             else if (strstr(msg, "VNRRG") != NULL)
             {
-                step = 6; // Bir sonraki adıma geç
+                step = 6;   // Bir sonraki adıma geç
             }
             else
             {
