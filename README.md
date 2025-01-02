@@ -20,4 +20,20 @@ back to Docklight. If the message starts with "$VNRRG", it processes the message
 sends only that information to Docklight without echoing the entire message.
 ## Error Handling:
 If the received message is incorrectly formatted, an error message is returned.
+## No Message Received:
+If no message is received from Docklight, the program generates and sends a message with randomly changing sensor values (yaw, pitch, roll,
+MagX, MagY, MagZ, AccelX, Accely, AccelZ, GyroX, GyroY, GyroZ) at a 1Hz rate.
+## Checksum Calculation:
+A checksum is calculated for every message, and it is appended to the message.
+## Key Features
+Message Validation and Processing: Messages must follow the format $(header),(data)*. If the message is invalid, an error message is sent.
+$VNWRG and $VNRRG Headers: These headers are processed separately. Messages starting with $VNWRG are echoed back, while messages
+starting with $VNRRG are processed according to the specified register, and only relevant data is sent back to Docklight. Random Sensor Data
+Generation: If no messages are received from Docklight, random sensor data messages are sent at 1Hz, containing values for yaw, pitch, roll,
+MagX, MagY, MagZ, AccelX, AccelY, AccelZ, GyroX, GyroY, GyroZ. Checksum Calculation: For all messages, a checksum is calculated and
+appended to the end of the message.
+## Commands Sent From Docklight
+![image](https://github.com/user-attachments/assets/0d74f7a6-b278-436c-8dde-caba682e330e)
 
+Acknowledgements This project uses Windows API functions for serial port communication. The checksum calculation algorithm is based on
+standard methods for ensuring data integrity in communication protocols.
