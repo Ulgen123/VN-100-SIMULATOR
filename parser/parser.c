@@ -5,9 +5,9 @@
 #include "cksum.h"
 #include "write.h"
 
-#define device_name        "VN-100T-CR"
-#define hardware_revision  "7"
-#define serial_number      "0100061897"
+#define device_name "VN-100T-CR"
+#define hardware_revision "7"
+#define serial_number "0100061897"
 
 extern int new_frequency;
 extern HANDLE hSerial;
@@ -95,35 +95,35 @@ void parser(const char *msg)
             else if (strstr(msg, "VNRRG") != NULL)
             {
                 int commandNumber;
-                sscanf(msg + 7, "%2d", &commandNumber);  // VNRRG'den sonra gelen 2 basamaklı sayıyı al
+                sscanf(msg + 7, "%2d", &commandNumber); // VNRRG'den sonra gelen 2 basamaklı sayıyı al
 
                 if (commandNumber == 1) // Gelen sayıya göre işlem yap
                 {
-                    snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s",commandNumber, device_name);
-                    int checksum = calc_cksum(buffer ,strlen(buffer)); // '$' hariç tüm karakterler
-                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X",commandNumber, device_name , checksum);
+                    snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s", commandNumber, device_name);
+                    int checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, device_name, checksum);
                     write(hSerial, buffer);
                     //$VNRRG,01,VN-100T-CR*32
-                    step = 0;  // Tüm adımlar tamamlandı
+                    step = 4; // Tüm adımlar tamamlandı
                 }
                 else if (commandNumber == 2)
                 {
-                    snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s",commandNumber, hardware_revision );
-                    int checksum = calc_cksum(buffer ,strlen(buffer)); // '$' hariç tüm karakterler
-                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X",commandNumber, hardware_revision , checksum);
+                    snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s", commandNumber, hardware_revision);
+                    int checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, hardware_revision, checksum);
                     write(hSerial, buffer);
                     // $VNRRG,02,7*6A
-                    step = 0;  // Tüm adımlar tamamlandı
+                    step = 4; // Tüm adımlar tamamlandı
                 }
-                else if(commandNumber == 3)
+                else if (commandNumber == 3)
                 {
-                    snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s",commandNumber, serial_number );
-                    int checksum = calc_cksum(buffer ,strlen(buffer)); // '$' hariç tüm karakterler
-                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X",commandNumber, serial_number , checksum);
+                    snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s", commandNumber, serial_number);
+                    int checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X", commandNumber, serial_number, checksum);
                     write(hSerial, buffer);
                     // $VNRRG,03,0100061897*5C
-                    step = 0;
-                }  
+                    step = 4;
+                }
                 else
                 {
                     printf("Error: Command number is incorrect. Expected '01', '02' or '03'.\n");
@@ -137,7 +137,6 @@ void parser(const char *msg)
                 step = -3; // Hata durumunda çık
             }
             break;
-            
 
         case 4:
         { // Mesajın ',' ile ayrıldığını kontrol et ve ayrılmış parçalara böl
@@ -165,7 +164,7 @@ void parser(const char *msg)
             char *token = strtok(buffer, ",");     // İlk token (VNWRG)
             token = strtok(NULL, ",");             // İkinci token (cihaz ID)
             char *secondtoken = strtok(NULL, ","); // Üçüncü token (yük), yani payload
-            if ((token != NULL) && (strcmp(token, "07") == 0))
+            if ((strstr(msg, "VNWRG") != NULL) && (token != NULL) && (strcmp(token, "07") == 0))
             {
                 if (secondtoken != NULL)
                 {
@@ -195,6 +194,10 @@ void parser(const char *msg)
                     printf("Error: Payload token not found.\n");
                     step = -6; // Hata durumunda çık
                 }
+            }
+            else if (strstr(msg, "VNRRG") != NULL)
+            {
+                step = 6; // Bir sonraki adıma geç
             }
             else
             {
