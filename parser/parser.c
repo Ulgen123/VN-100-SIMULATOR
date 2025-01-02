@@ -243,7 +243,3 @@ void parser(const char *msg)
         }
     }
 }
-
-//   $VNRRG,01*72   =>    $VNRRG,01,VN-100*5A
-//   $VNRRG,02*71   =>    $VNRRG,02,4*69
-//read me yaz!!!
