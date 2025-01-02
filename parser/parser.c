@@ -101,24 +101,27 @@ void parser(const char *msg)
                 {
                     snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s",commandNumber, device_name);
                     int checksum = calc_cksum(buffer ,strlen(buffer)); // '$' hariç tüm karakterler
+                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X",commandNumber, device_name , checksum);
                     write(hSerial, buffer);
-                    // $VNRRG,01,VN-100*5A
+                    //$VNRRG,01,VN-100T-CR*32
                     step = 0;  // Tüm adımlar tamamlandı
                 }
                 else if (commandNumber == 2)
                 {
                     snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s",commandNumber, hardware_revision );
                     int checksum = calc_cksum(buffer ,strlen(buffer)); // '$' hariç tüm karakterler
+                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X",commandNumber, hardware_revision , checksum);
                     write(hSerial, buffer);
-                    // $VNRRG,02,4*69
+                    // $VNRRG,02,7*6A
                     step = 0;  // Tüm adımlar tamamlandı
                 }
                 else if(commandNumber == 3)
                 {
                     snprintf(buffer, sizeof(buffer), "VNRRG,0%d,%s",commandNumber, serial_number );
                     int checksum = calc_cksum(buffer ,strlen(buffer)); // '$' hariç tüm karakterler
+                    snprintf(buffer, sizeof(buffer), "$VNRRG,0%d,%s*%02X",commandNumber, serial_number , checksum);
                     write(hSerial, buffer);
-                    // $VNRRG,03,5*6A
+                    // $VNRRG,03,0100061897*5C
                     step = 0;
                 }  
                 else
