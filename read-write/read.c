@@ -47,10 +47,10 @@ DWORD read(HANDLE hSerial, char *readbuffer, size_t size)
             readbuffer[bytesRead] = '\0'; // Null-terminator ekle
             printf("Received data: %s\n", readbuffer);
             parser(readbuffer);
-            if (strncmp(readbuffer, "$VNRRG", 6) != 0 && step >= 0 )
-            {
-                write(hSerial, readbuffer);
-            }
+            //if (strncmp(readbuffer, "$VNRRG", 6) != 0 && step >= 0 )
+            //{
+            //    write(hSerial, readbuffer);
+            //}
             if (new_frequency != frequency)
             {
                 set_frequency(get_new_frequency());

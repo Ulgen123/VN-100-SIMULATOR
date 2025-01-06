@@ -9,8 +9,13 @@
 #define hardware_revision "7"
 #define serial_number "0100061897"
 
-int commandNumber;
-int step;
+char *regNumber;
+char *payload = NULL;
+int checksum;
+char buffer[BUFFER_SIZE];
+char *variable = NULL;
+unsigned char received_cksum;
+unsigned char calculated_cksum;
 extern int new_frequency;
 extern HANDLE hSerial;
 
@@ -55,6 +60,8 @@ extern HANDLE hSerial;
  * - Processing frequency values from the payload (e.g., "1", "2", "5", etc.)
  * - Handling device ID validation ("07")
  */
+
+/*
 void parser(const char *msg)
 {
     char buffer[BUFFER_SIZE];
@@ -251,6 +258,164 @@ void parser(const char *msg)
             printf("Invalid step. Exiting.\n");
             step = -1; // Hata durumunda çık
             break;
+        }
+    }
+}
+
+*/
+
+static bool validateMessage(const char *msg)
+{
+    if (strchr(msg, '$') && strchr(msg, '*'))
+        ;
+    else
+    {
+        printf("Error: '$' or '*' not found in the message.\n");
+        return false;
+    }
+
+    if (msg[0] == '$')
+        ;
+    else
+    {
+        printf("Error: '$' is not the first letter in the message.\n");
+        return false;
+    }
+
+    char *asterisk_pos = strchr(msg, '*'); // '*' işaretinden önceki kısmı al (main kısmı)
+    if (asterisk_pos == NULL)
+    {
+        printf("Error: '*' not found in the message.\n");
+        return false;
+    }
+
+    size_t length = asterisk_pos - msg;
+    // char main_part[256] yerine yer tasarrufu için buffer kullanıldı;
+    strncpy(buffer, msg + 1, length - 1);
+    buffer[length - 1] = '\0'; // Null-terminate
+
+    char *cksum_part = asterisk_pos + 1;                                        // * sonrası kısmı (cksum kısmı)
+    unsigned char received_cksum = (unsigned char)strtol(cksum_part, NULL, 16); // 16'lık sayı olarak parse et
+    unsigned char calculated_cksum = calc_cksum(buffer, strlen(buffer));
+    if (calculated_cksum == received_cksum)
+        ;
+    else
+    {
+        printf("Checksum does not match. Calculated: %02X, Received: %02X\n", calculated_cksum, received_cksum);
+        return false;
+    }
+    strncpy(buffer, msg, sizeof(buffer) - 1); // Gelen mesajı buffer'a kopyala
+    buffer[sizeof(buffer) - 1] = '\0';        // Güvenlik için null-terminator ekle
+
+    if (strchr(buffer, ',') != NULL)
+    {
+        for (char *token = strtok(buffer, ","); token != NULL; token = strtok(NULL, ","))
+            ; // null statement
+    }
+    else
+    {
+        printf("Error: Message is not separated by ','\n");
+        return false;
+    }
+    return true;
+}
+
+char *extractRegiserNumber(const char *msg)
+{
+    static char regNumber[3];          // 2 karakter + null sonlandırıcı
+    sscanf(msg + 7, "%2s", regNumber); // VNRRG'den sonra gelen 2 basamaklı sayıyı al
+    return regNumber;
+}
+
+static void parserRegisterCommand(const char *msg)
+{
+    regNumber = extractRegiserNumber(msg); // 01
+    if (strcmp(regNumber, "01") == 0)
+    {
+        snprintf(buffer, sizeof(buffer), "VNRRG,%s,%s", regNumber, device_name);
+        checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+        variable = device_name;
+    }
+    else if (strcmp(regNumber, "02") == 0)
+    {
+        snprintf(buffer, sizeof(buffer), "VNRRG,%s,%s", regNumber, hardware_revision);
+        checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+        variable = hardware_revision;
+    }
+    else if (strcmp(regNumber, "03") == 0)
+    {
+        snprintf(buffer, sizeof(buffer), "VNRRG,%s,%s", regNumber, serial_number);
+        checksum = calc_cksum(buffer, strlen(buffer)); // '$' hariç tüm karakterler
+        variable = serial_number;
+    }
+}
+
+char *extractHeader(const char *msg)
+{
+    static char header[6];
+    strncpy(header, msg, 6);
+    header[6] = '\0';
+    return header;
+}
+
+void parserYPRcommand(const char *msg)
+{
+    char *buffer = strdup(msg);            // Mesajın bir kopyasını al
+    char *token = strtok(buffer, ",");     // İlk token (VNWRG)
+    token = strtok(NULL, ",");             // İkinci token (cihaz ID)
+    char *secondtoken = strtok(NULL, ","); // Üçüncü token (yük), yani payload
+    if ((token != NULL) && (strcmp(token, "07") == 0))
+    {
+        if (secondtoken != NULL)
+        {
+            // Yük kısmı yıldız işaretine kadar olan kısmı al
+            payload = secondtoken;
+            char *asterisk_pos = strchr(payload, '*');
+            if (asterisk_pos != NULL)
+            {
+                *asterisk_pos = '\0'; // Yıldızdan önceki kısmı al
+            }
+            // Payload'ı kontrol et
+            if (strcmp(payload, "1") == 0 || strcmp(payload, "2") == 0 || strcmp(payload, "5") == 0 || strcmp(payload, "10") == 0 || strcmp(payload, "40") == 0)
+            {
+                new_frequency = atoi(payload);
+                write(hSerial, msg);
+            }
+            else
+            {
+                printf("Error: Payload is incorrect. Expected '40'.\n");
+            }
+        }
+        else
+        {
+            printf("Error: Payload token not found.\n");
+        }
+    }
+    else
+    {
+        printf("Error: Device ID is incorrect. Expected '07'.\n");
+    }
+}
+
+void parser(const char *msg)
+{
+    if (validateMessage(msg) == true)
+    {
+        char *header = extractHeader(msg);
+        if (strcmp(header, "$VNRRG") == 0)
+        {
+            parserRegisterCommand(msg);
+            snprintf(buffer, sizeof(buffer), "$VNRRG,%s,%s*%02X", regNumber, variable, checksum);
+            write(hSerial, buffer);
+        }
+        else if (strcmp(header, "$VNWRG") == 0)
+        {
+            parserYPRcommand(msg);
+            printf("Message: %s\n", msg); // Mesajın tamamını yazdır
+        }
+        else
+        {
+            printf("Message does not contain 'VNWRG' or 'VNRRG'. Ignoring...\n");
         }
     }
 }
