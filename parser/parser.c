@@ -9,6 +9,7 @@
 #define hardware_revision "7"
 #define serial_number "0100061897"
 
+char header[6];
 char *regNumber;
 char *payload = NULL;
 int checksum;
@@ -264,21 +265,13 @@ void parser(const char *msg)
 
 */
 
+
+
 static bool validateMessage(const char *msg)
 {
-    if (strchr(msg, '$') && strchr(msg, '*'))
-        ;
-    else
+    if ((msg[0] != '$') && (msg[strlen(msg) - 3] != '*') &&(strchr(buffer, ',') != NULL))
     {
-        printf("Error: '$' or '*' not found in the message.\n");
-        return false;
-    }
-
-    if (msg[0] == '$')
-        ;
-    else
-    {
-        printf("Error: '$' is not the first letter in the message.\n");
+        printf("Error.\n");
         return false;
     }
 
@@ -297,9 +290,7 @@ static bool validateMessage(const char *msg)
     char *cksum_part = asterisk_pos + 1;                                        // * sonrası kısmı (cksum kısmı)
     unsigned char received_cksum = (unsigned char)strtol(cksum_part, NULL, 16); // 16'lık sayı olarak parse et
     unsigned char calculated_cksum = calc_cksum(buffer, strlen(buffer));
-    if (calculated_cksum == received_cksum)
-        ;
-    else
+    if (calculated_cksum != received_cksum)
     {
         printf("Checksum does not match. Calculated: %02X, Received: %02X\n", calculated_cksum, received_cksum);
         return false;
@@ -352,9 +343,7 @@ static void parserRegisterCommand(const char *msg)
 
 char *extractHeader(const char *msg)
 {
-    static char header[6];
-    strncpy(header, msg, 6);
-    header[6] = '\0';
+    strncpy(header, msg+1, 5);
     return header;
 }
 
@@ -376,7 +365,7 @@ void parserYPRcommand(const char *msg)
                 *asterisk_pos = '\0'; // Yıldızdan önceki kısmı al
             }
             // Payload'ı kontrol et
-            if (strcmp(payload, "1") == 0 || strcmp(payload, "2") == 0 || strcmp(payload, "5") == 0 || strcmp(payload, "10") == 0 || strcmp(payload, "40") == 0)
+            if ((strcmp(payload, "1") == 0 )|| (strcmp(payload, "2") == 0 )|| (strcmp(payload, "5") == 0 )|| (strcmp(payload, "10") == 0 )|| (strcmp(payload, "40") == 0))
             {
                 new_frequency = atoi(payload);
                 write(hSerial, msg);
@@ -402,13 +391,13 @@ void parser(const char *msg)
     if (validateMessage(msg) == true)
     {
         char *header = extractHeader(msg);
-        if (strcmp(header, "$VNRRG") == 0)
+        if (strcmp(header, "VNRRG") == 0)
         {
             parserRegisterCommand(msg);
             snprintf(buffer, sizeof(buffer), "$VNRRG,%s,%s*%02X", regNumber, variable, checksum);
             write(hSerial, buffer);
         }
-        else if (strcmp(header, "$VNWRG") == 0)
+        else if (strcmp(header, "VNWRG") == 0)
         {
             parserYPRcommand(msg);
             printf("Message: %s\n", msg); // Mesajın tamamını yazdır
